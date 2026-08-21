@@ -2,3 +2,4 @@ __pycache__/
 *.pyc
 .env
 *.db
+stuff/statcast_2024.csv
