@@ -1,0 +1,700 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Moeller Rapsodo</title>
+<style>
+:root{
+  --navy:#1a1a2e; --navy-deep:#0d0d1b; --panel-hi:rgba(255,255,255,.028);
+  --gold:#C5A55A; --gold-light:#d4ba78; --gold-dim:rgba(197,165,90,.14);
+  --line:rgba(197,165,90,.18); --hairline:rgba(255,255,255,.07);
+  --ink:#f2f3f7; --ink-2:rgba(255,255,255,.64); --ink-3:rgba(255,255,255,.38);
+  /* Dark-surface pitch hues, validated for colour-blind separation. */
+  --pt-FB:#5E8CE8; --pt-CH:#B87423; --pt-SL:#12A18F; --pt-CB:#9463D0;
+  --pt-SI:#D14372; --pt-CT:#C9A227; --pt-SP:#7FA6B8; --pt-UNK:#767D85;
+  --mono:ui-monospace,"Cascadia Mono",Consolas,monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:
+    radial-gradient(1100px 520px at 85% -10%, rgba(197,165,90,.09), transparent 60%),
+    radial-gradient(900px 480px at -10% 108%, rgba(94,140,232,.07), transparent 55%),
+    var(--navy-deep);
+  color:var(--ink);
+  font-family:'Segoe UI',system-ui,-apple-system,sans-serif;line-height:1.55;
+  min-height:100vh;
+}
+.wrap{max-width:1280px;margin:0 auto;padding:1.6rem 1.4rem 4.5rem}
+
+/* ===== masthead ===== */
+header{display:flex;align-items:baseline;gap:.9rem;flex-wrap:wrap;
+  padding-bottom:.9rem;border-bottom:1px solid var(--line)}
+header h1{font-size:1.05rem;font-weight:800;letter-spacing:.14em}
+header h1 span{color:var(--gold)}
+header .tag{font-family:var(--mono);font-size:.62rem;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--ink-3)}
+header .spacer{flex:1}
+.pill{font-family:var(--mono);font-size:.66rem;letter-spacing:.1em;
+  text-transform:uppercase;padding:.24rem .6rem;border-radius:99px;
+  background:var(--gold-dim);color:var(--gold-light);border:1px solid var(--line)}
+
+/* ===== player hero ===== */
+.hero{display:flex;align-items:flex-end;justify-content:space-between;
+  gap:1.4rem;flex-wrap:wrap;margin:1.7rem 0 .4rem}
+.hero .who h2{font-size:clamp(1.7rem,4vw,2.4rem);font-weight:800;
+  letter-spacing:-.015em;line-height:1.1}
+.hero .who .sub{display:flex;gap:.45rem;flex-wrap:wrap;margin-top:.55rem}
+.controls{display:flex;gap:.9rem;flex-wrap:wrap;align-items:flex-end}
+label.lbl{display:block;font-family:var(--mono);font-size:.6rem;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--gold);
+  margin-bottom:.35rem}
+select{background:var(--navy);color:var(--ink);border:1px solid var(--line);
+  border-radius:8px;padding:.55rem 2rem .55rem .75rem;font:inherit;
+  font-size:.88rem;min-width:225px;cursor:pointer;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23C5A55A'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right .7rem center}
+select:hover{border-color:var(--gold)}
+select:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+/* ===== legend chips ===== */
+.legend{display:flex;gap:.45rem;flex-wrap:wrap;list-style:none;margin:1rem 0 0}
+.legend li{display:flex;align-items:center;gap:.45rem;font-size:.78rem;
+  color:var(--ink-2);cursor:pointer;user-select:none;padding:.28rem .7rem;
+  border:1px solid var(--hairline);border-radius:99px;
+  background:rgba(255,255,255,.025);transition:opacity .12s,border-color .12s}
+.legend li:hover{border-color:var(--line);color:var(--ink)}
+.legend li[aria-pressed="false"]{opacity:.32}
+.legend li:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.legend li .n{font-family:var(--mono);font-size:.66rem;color:var(--ink-3)}
+.sw{width:9px;height:9px;border-radius:50%;flex:none;background:var(--pt-UNK)}
+.sw[data-pt=FB]{background:var(--pt-FB)} .sw[data-pt=CH]{background:var(--pt-CH)}
+.sw[data-pt=SL]{background:var(--pt-SL)} .sw[data-pt=CB]{background:var(--pt-CB)}
+.sw[data-pt=SI]{background:var(--pt-SI)} .sw[data-pt=CT]{background:var(--pt-CT)}
+.sw[data-pt=SP]{background:var(--pt-SP)}
+
+/* ===== tabs: segmented control ===== */
+.tabs{display:inline-flex;gap:.25rem;flex-wrap:wrap;margin:1.3rem 0 1.1rem;
+  background:rgba(255,255,255,.035);border:1px solid var(--hairline);
+  border-radius:11px;padding:.28rem}
+.tabs button{background:none;border:none;border-radius:8px;color:var(--ink-2);
+  font:inherit;font-size:.86rem;padding:.5rem 1rem;cursor:pointer;
+  letter-spacing:.02em;transition:background .12s,color .12s}
+.tabs button:hover{color:var(--ink)}
+.tabs button[aria-selected="true"]{background:var(--gold-dim);
+  color:var(--gold-light);font-weight:600}
+.tabs button:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
+.tabpane[hidden]{display:none}
+
+/* ===== panels ===== */
+.panel{background:linear-gradient(180deg,var(--panel-hi),rgba(255,255,255,.012));
+  border:1px solid var(--hairline);border-radius:16px;
+  padding:1.4rem 1.5rem;margin-bottom:1.2rem;
+  box-shadow:0 14px 40px rgba(0,0,0,.35)}
+.panel h2{font-size:1.02rem;font-weight:700;margin-bottom:.2rem}
+.hint{color:var(--ink-3);font-size:.8rem;margin-bottom:1rem;max-width:72ch}
+
+/* table + plot side by side where the table is narrow */
+.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,420px);
+  gap:1.4rem;align-items:start}
+.plots2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+  gap:1.2rem;margin-top:1.1rem}
+@media(max-width:920px){.split{grid-template-columns:1fr}}
+
+/* ===== tables ===== */
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.86rem}
+th{font-family:var(--mono);font-size:.6rem;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--gold);text-align:right;
+  padding:0 .55rem .55rem;font-weight:600;border-bottom:1px solid var(--line);
+  white-space:nowrap}
+th:first-child{text-align:left;padding-left:.2rem}
+td{padding:.55rem .55rem;text-align:right;font-family:var(--mono);
+  color:var(--ink-2);border-bottom:1px solid var(--hairline);
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+td:first-child{text-align:left;color:var(--ink);font-family:inherit;
+  font-weight:600;padding-left:.2rem}
+td.hi{color:var(--ink);font-weight:700}
+tbody tr{transition:background .1s}
+tbody tr:hover td{background:rgba(255,255,255,.03)}
+tr:last-child td{border-bottom:none}
+.prov{font-size:.56rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--gold-light);background:var(--gold-dim);padding:.12rem .4rem;
+  border-radius:99px;margin-left:.45rem;font-family:var(--mono);font-weight:400}
+
+/* ===== figures ===== */
+figure{margin:0;background:rgba(0,0,0,.28);border:1px solid var(--hairline);
+  border-radius:13px;padding:.9rem 1rem 1rem}
+.split figure{position:sticky;top:1rem}
+figcaption{font-size:.78rem;font-weight:600;color:var(--gold-light);
+  margin-bottom:.55rem}
+figcaption span{display:block;font-weight:400;font-size:.7rem;
+  color:var(--ink-3);letter-spacing:.02em}
+svg{width:100%;height:auto;max-width:480px;display:block;margin:0 auto}
+.ax{fill:var(--ink-3);font-size:9px;font-family:var(--mono)}
+.dot{cursor:crosshair}
+.dot.hl{stroke:#fff;stroke-width:2}
+
+/* ===== percentiles ===== */
+.pct-row{display:grid;grid-template-columns:190px 1fr 150px;gap:1rem;
+  align-items:center;padding:.55rem 0;border-bottom:1px solid var(--hairline)}
+.pct-row:last-of-type{border-bottom:none}
+.pct-row .nm{font-size:.87rem;font-weight:600}
+.pct-track{height:10px;background:rgba(255,255,255,.06);border-radius:99px;
+  position:relative;display:block}
+.pct-fill{display:block;height:100%;border-radius:99px;
+  background:linear-gradient(90deg,rgba(197,165,90,.45),var(--gold))}
+.pct-fill.neutral{background:linear-gradient(90deg,rgba(255,255,255,.18),rgba(255,255,255,.42))}
+.pct-mid{position:absolute;left:50%;top:-4px;bottom:-4px;width:1px;
+  background:rgba(255,255,255,.22)}
+.pct-val{font-family:var(--mono);font-size:.8rem;text-align:right;
+  color:var(--ink-2);white-space:nowrap}
+.pct-val b{color:var(--ink);font-size:.95rem}
+@media(max-width:640px){.pct-row{grid-template-columns:120px 1fr 120px;gap:.6rem}}
+
+.empty{color:var(--ink-3);font-size:.9rem;padding:1.5rem 0;text-align:center}
+.tip{position:fixed;pointer-events:none;opacity:0;transition:opacity .1s;z-index:50;
+  background:#0b0b16;border:1px solid var(--line);border-radius:8px;
+  padding:.5rem .65rem;font-size:.75rem;white-space:pre;line-height:1.55;
+  box-shadow:0 10px 30px rgba(0,0,0,.55)}
+.tip b{color:var(--gold-light)}
+footer{margin-top:2.2rem;padding-top:1rem;border-top:1px solid var(--hairline);
+  color:var(--ink-3);font-size:.75rem;max-width:90ch}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>MOELLER <span>RAPSODO</span></h1>
+  <span class="tag">Pitching Lab</span>
+</header>
+
+{% if empty %}
+  <p class="empty">No Rapsodo data loaded yet. The nightly pull writes it at 5am.</p>
+{% else %}
+
+<div class="hero">
+  <div class="who">
+    <h2>{{ player.name }}</h2>
+    <div class="sub">
+      <span class="pill">{{ player.level }}</span>
+      {% if player.throws %}<span class="pill">throws {{ player.throws }}</span>{% endif %}
+      <span class="pill">{{ n_pitches }} pitches</span>
+      <span class="pill">{{ player.sessions }} bullpens</span>
+      {% if arsenal and arsenal[0].slot %}<span class="pill">{{ arsenal[0].slot }}</span>{% endif %}
+    </div>
+  </div>
+  <form class="controls" method="get" id="controls">
+    <div>
+      <label class="lbl" for="p">Pitcher</label>
+      <select name="p" id="p" onchange="document.getElementById('controls').submit()">
+        {% for r in roster %}
+        <option value="{{ r.slug }}" {% if r.id == player.id %}selected{% endif %}>
+          {{ r.name }} — {{ r.level }} ({{ r.sessions }})
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="lbl" for="pt">Percentile pitch</label>
+      <select name="pt" id="pt" onchange="document.getElementById('controls').submit()">
+        {% for t in thrown %}
+        <option value="{{ t }}" {% if t == percentile_pitch %}selected{% endif %}>
+          {{ pitch_labels.get(t, t) }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+  </form>
+</div>
+
+<ul class="legend" id="legend"></ul>
+
+<div class="tabs" role="tablist">
+  <button role="tab" aria-selected="true"  data-tab="loc">Pitch Location</button>
+  <button role="tab" aria-selected="false" data-tab="pct">Percentile Rankings</button>
+  <button role="tab" aria-selected="false" data-tab="mov">Movement Profile</button>
+  <button role="tab" aria-selected="false" data-tab="vel">Velocity / Pitch</button>
+</div>
+
+<!-- ============ PITCH LOCATION ============ -->
+<section class="tabpane" id="tab-loc">
+  <div class="panel">
+    <h2>Pitch Location</h2>
+    <p class="hint">Where each pitch crossed, catcher's view &mdash; home plate below the
+      zone, batter's boxes either side (clipped at the frame, as a catcher-cam crops them).
+      Balls in the dirt pin to the ground line.
+      Strike% is the device's own zone call, so read it as location, not competition results.</p>
+    <div class="split">
+    <div class="scroll"><table>
+      <thead><tr><th>Pitch</th><th>Usage</th><th>N</th><th>Velo</th><th>Strike%</th><th>Tilt</th><th>Gyro</th></tr></thead>
+      <tbody>
+      {% for a in arsenal %}
+        <tr data-pt="{{ a.pt }}">
+          <td><span class="sw" data-pt="{{ a.pt }}"></span>{{ a.label }}
+            {% if a.provisional %}<span class="prov" title="Rapsodo auto-classified; too few reps to trust">provisional</span>{% endif %}</td>
+          <td>{{ a.usage }}%</td><td>{{ a.n }}</td>
+          <td class="hi">{{ a.velo }}</td>
+          <td>{{ a.strike_pct if a.strike_pct is not none else '—' }}%</td>
+          <td>{{ a.tilt or '—' }}</td>
+          <td>{{ a.gyro if a.gyro is not none else '—' }}&deg;</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+    <figure>
+      <figcaption>Location <span>inches from the middle of the plate &times; height</span></figcaption>
+      <svg id="plotLoc" viewBox="0 0 320 340" role="img" aria-label="Pitch location"></svg>
+    </figure>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PERCENTILES ============ -->
+<section class="tabpane" id="tab-pct" hidden>
+  <div class="panel">
+    <h2>Percentile Rankings — {{ pitch_labels.get(percentile_pitch, percentile_pitch) }}</h2>
+    <p class="hint">Against other Moeller <strong>{{ player.level }}</strong> pitchers only.
+      Ranking a freshman against varsity arms measures age, not development.
+      Break and release have no better direction, so those bars are neutral.</p>
+    {% if percentiles %}
+      {% for m in percentiles %}
+      <div class="pct-row">
+        <span class="nm">{{ m.label }}</span>
+        <span class="pct-track">
+          {% if m.pct is not none %}
+            <span class="pct-fill {{ '' if m.directional else 'neutral' }}"
+                  style="width:{{ m.pct }}%"></span>
+            <span class="pct-mid"></span>
+          {% endif %}
+        </span>
+        <span class="pct-val">
+          {% if m.pct is not none %}<b>{{ m.pct_label }}</b> · {{ m.value }}{{ m.unit }}
+          {% else %}{{ m.value }}{{ m.unit }}{% endif %}
+        </span>
+      </div>
+      {% endfor %}
+      <p class="hint" style="margin:1rem 0 0">
+        {{ percentiles[0].n_peers }} {{ player.level }} pitcher(s) with enough
+        {{ pitch_labels.get(percentile_pitch, percentile_pitch)|lower }} reps to rank.
+        {% if percentiles[0].n_peers < 5 %}That is a small field — treat these as rough.{% endif %}
+      </p>
+    {% else %}
+      <p class="empty">Not enough same-level arms throwing this pitch to rank him.</p>
+    {% endif %}
+  </div>
+</section>
+
+<!-- ============ MOVEMENT ============ -->
+<section class="tabpane" id="tab-mov" hidden>
+  <div class="panel">
+    <h2>Movement Profile</h2>
+    <p class="hint">Fixed &plusmn;25in scale so shapes are comparable between pitchers
+      and across months.</p>
+    <div class="scroll"><table>
+      <thead><tr><th>Pitch</th><th>N</th><th>IVB</th><th>HB</th><th>Spin</th><th>True spin</th><th>Eff</th><th>Tilt</th><th>Rel ht</th><th>Rel side</th><th>Arm angle</th></tr></thead>
+      <tbody>
+      {% for a in arsenal %}
+        <tr data-pt="{{ a.pt }}">
+          <td><span class="sw" data-pt="{{ a.pt }}"></span>{{ a.label }}</td>
+          <td>{{ a.n }}</td>
+          <td class="hi">{{ a.ivb if a.ivb is not none else '—' }}</td>
+          <td class="hi">{{ a.hb if a.hb is not none else '—' }}</td>
+          <td>{{ a.spin if a.spin is not none else '—' }}</td>
+          <td>{{ a.true_spin if a.true_spin is not none else '—' }}</td>
+          <td>{{ a.eff if a.eff is not none else '—' }}%</td>
+          <td>{{ a.tilt or '—' }}</td>
+          <td>{{ a.rel_h if a.rel_h is not none else '—' }}</td>
+          <td>{{ a.rel_s if a.rel_s is not none else '—' }}</td>
+          <td class="hi" title="{{ a.slot or '' }}">
+            {%- if a.arm_angle is not none %}{{ a.arm_angle }}&deg;{% else %}&mdash;{% endif -%}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+    <div class="plots2">
+    <figure>
+      <figcaption>Movement <span>pitcher's view &mdash; horizontal break &times; induced vertical break</span></figcaption>
+      <svg id="plotMov" viewBox="0 0 320 340" role="img" aria-label="Pitch movement"></svg>
+    </figure>
+    <figure>
+      <figcaption>Release point &amp; arm slot
+        <span>pitcher's view, feet &mdash; gold marks the throwing shoulder,
+        the dashed arm runs to his average release
+        {%- if arsenal and arsenal[0].slot %} ({{ arsenal[0].slot }}){% endif %}</span></figcaption>
+      <svg id="plotRel" viewBox="0 0 320 340" role="img"
+           aria-label="Release point and arm slot"></svg>
+    </figure>
+    </div>
+    <p class="hint" style="margin-top:1rem">Arm angle is inferred from fastball
+      spin axis{% if slot %} ({{ slot.n }} {{ pitch_labels.get(slot.from_pt, slot.from_pt)|lower }}s){% endif %}
+      &mdash; a fastball's backspin tilts with the arm that threw it, and unlike release
+      position it doesn't care where he stands on the rubber. 90&deg; is over the top,
+      0&deg; is sidearm. Good to about &plusmn;10&deg;; consistent across the staff, so
+      comparisons between our arms hold.</p>
+  </div>
+</section>
+
+<!-- ============ VELOCITY ============ -->
+<section class="tabpane" id="tab-vel" hidden>
+  <div class="panel">
+    <h2>Velocity / Pitch</h2>
+    <p class="hint">Session averages per pitch type. A pitch needs 3+ reps in a
+      session to plot, so one mis-tagged pitch can't draw a line.</p>
+    <div class="split">
+    <div class="scroll"><table>
+      <thead><tr><th>Pitch</th><th>N</th><th>Avg</th><th>Max</th><th>Rel ht</th><th>Rel side</th></tr></thead>
+      <tbody>
+      {% for a in arsenal %}
+        <tr data-pt="{{ a.pt }}">
+          <td><span class="sw" data-pt="{{ a.pt }}"></span>{{ a.label }}</td>
+          <td>{{ a.n }}</td>
+          <td class="hi">{{ a.velo }}</td><td>{{ a.max_velo }}</td>
+          <td>{{ a.rel_h if a.rel_h is not none else '—' }}</td>
+          <td>{{ a.rel_s if a.rel_s is not none else '—' }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+    <figure>
+      <figcaption>Velocity by session <span>mph</span></figcaption>
+      <svg id="plotVel" viewBox="0 0 320 300" role="img" aria-label="Velocity by session"></svg>
+    </figure>
+    </div>
+  </div>
+</section>
+
+<footer>
+  Rapsodo bullpen data, pulled automatically every morning. Failed radar tracks
+  excluded. Pitch types are the device's own classification — none have been
+  coach-validated, so a pitch marked provisional is a guess, not an offering.
+</footer>
+{% endif %}
+</div>
+
+<script id="payload" type="application/json">{{ {'pitches': pitches, 'sessions': sessions, 'arsenal': arsenal,
+    'armAngle': slot.angle if slot else none,
+    'armSide': slot.side if slot else none,
+    'armLen': ((height_in or 72) * 0.34 / 12)|round(2)}|tojson if not empty else '{}' }}</script>
+<script>
+(function(){
+  const node = document.getElementById('payload');
+  if(!node) return;
+  const D = JSON.parse(node.textContent);
+  if(!D.pitches) return;
+
+  const LABEL = {FB:'Fastball',SI:'Sinker',CT:'Cutter',SL:'Slider',
+                 CB:'Curveball',CH:'Changeup',SP:'Splitter',UNK:'Unlabeled'};
+  const KNOWN = ['FB','SI','CT','SL','CB','CH','SP'];
+  const col = pt => 'var(--pt-' + (KNOWN.includes(pt) ? pt : 'UNK') + ')';
+  D.pitches.forEach((p,i) => { p.i = i; });
+
+  const present = D.arsenal.map(a => a.pt);
+  const active = new Set(present);
+  const legend = document.getElementById('legend');
+  const tip = document.createElement('div');
+  tip.className = 'tip'; document.body.appendChild(tip);
+
+  const nFor = {}; D.arsenal.forEach(a => { nFor[a.pt] = a.n; });
+  legend.innerHTML = present.map(pt =>
+    '<li role="button" tabindex="0" aria-pressed="true" data-pt="' + pt + '">' +
+    '<span class="sw" data-pt="' + pt + '"></span>' + (LABEL[pt]||pt) +
+    '<span class="n">' + (nFor[pt]||0) + '</span></li>').join('');
+
+  function toggle(pt){
+    active.has(pt) ? active.delete(pt) : active.add(pt);
+    if(!active.size) present.forEach(p => active.add(p));
+    Array.from(legend.children).forEach(li =>
+      li.setAttribute('aria-pressed', active.has(li.dataset.pt) ? 'true' : 'false'));
+    document.querySelectorAll('tr[data-pt]').forEach(tr => {
+      tr.style.display = active.has(tr.dataset.pt) ? '' : 'none';
+    });
+    draw();
+  }
+  legend.addEventListener('click', e => {
+    const li = e.target.closest('li[data-pt]'); if(li) toggle(li.dataset.pt);
+  });
+  legend.addEventListener('keydown', e => {
+    if(e.key !== 'Enter' && e.key !== ' ') return;
+    const li = e.target.closest('li[data-pt]');
+    if(li){ e.preventDefault(); toggle(li.dataset.pt); }
+  });
+
+  // ---- tabs ----
+  const tabs = document.querySelectorAll('.tabs button');
+  tabs.forEach(b => b.addEventListener('click', () => {
+    tabs.forEach(x => x.setAttribute('aria-selected', String(x === b)));
+    document.querySelectorAll('.tabpane').forEach(p => { p.hidden = true; });
+    document.getElementById('tab-' + b.dataset.tab).hidden = false;
+    draw();   // SVGs sized while hidden measure as zero
+  }));
+
+  // ---- plotting ----
+  const M = {t:12,r:12,b:30,l:36};
+  function axes(svg, x0,x1,y0,y1, opts){
+    opts = opts || {};
+    const W = svg.viewBox.baseVal.width, H = svg.viewBox.baseVal.height;
+    // Rapsodo reports release side and horizontal break from the PITCHER's
+    // perspective: a right-hander is positive on both. Drawn straight, that puts
+    // a righty's arm on the right of the plot, which is what he sees, not what
+    // the catcher sees. Flipping x gives the catcher's view these charts claim --
+    // the same thing TrackMan report code does with invert_xaxis(). Tick labels
+    // keep the true values; only the position mirrors.
+    const X = opts.flipX
+      ? v => M.l+(x1-v)/(x1-x0)*(W-M.l-M.r)
+      : v => M.l+(v-x0)/(x1-x0)*(W-M.l-M.r);
+    const Y = v => H-M.b-(v-y0)/(y1-y0)*(H-M.t-M.b);
+    const step = (hi,lo) => { const r=hi-lo, p=Math.pow(10,Math.floor(Math.log10(r)));
+      return r/p>=5 ? p : (r/p>=2 ? p/2 : p/5); };
+    let s = '';
+    if(opts.xticks){
+      for(const t of opts.xticks){
+        s += '<line x1="'+X(t.v)+'" y1="'+M.t+'" x2="'+X(t.v)+'" y2="'+(H-M.b)+'" stroke="rgba(255,255,255,.07)"/>';
+        s += '<text class="ax" x="'+X(t.v)+'" y="'+(H-M.b+13)+'" text-anchor="middle">'+t.label+'</text>';
+      }
+    } else {
+      const sx = step(x1,x0);
+      for(let g=Math.ceil(x0/sx)*sx; g<=x1; g+=sx){
+        s += '<line x1="'+X(g)+'" y1="'+M.t+'" x2="'+X(g)+'" y2="'+(H-M.b)+'" stroke="rgba(255,255,255,.07)"/>';
+        s += '<text class="ax" x="'+X(g)+'" y="'+(H-M.b+13)+'" text-anchor="middle">'+(+g.toFixed(1))+'</text>';
+      }
+    }
+    const sy = step(y1,y0);
+    // tickFloor: the location scene extends below zero to make room for the
+    // plate and boxes, but "-10 inches of height" is not a label anyone needs.
+    const gy0 = (opts.tickFloor != null) ? Math.max(y0, opts.tickFloor) : y0;
+    for(let g=Math.ceil(gy0/sy)*sy; g<=y1; g+=sy){
+      s += '<line x1="'+M.l+'" y1="'+Y(g)+'" x2="'+(W-M.r)+'" y2="'+Y(g)+'" stroke="rgba(255,255,255,.07)"/>';
+      s += '<text class="ax" x="'+(M.l-5)+'" y="'+(Y(g)+3)+'" text-anchor="end">'+(+g.toFixed(1))+'</text>';
+    }
+    if(opts.zero){
+      if(x0<0&&x1>0) s += '<line x1="'+X(0)+'" y1="'+M.t+'" x2="'+X(0)+'" y2="'+(H-M.b)+'" stroke="rgba(255,255,255,.22)"/>';
+      if(y0<0&&y1>0) s += '<line x1="'+M.l+'" y1="'+Y(0)+'" x2="'+(W-M.r)+'" y2="'+Y(0)+'" stroke="rgba(255,255,255,.22)"/>';
+    }
+    return {s:s, X:X, Y:Y};
+  }
+
+  const shown = () => D.pitches.filter(p => active.has(p.pt));
+
+  function scatter(id, xk, yk, dom, opts){
+    opts = opts || {};
+    const svg = document.getElementById(id); if(!svg) return;
+    const pts = shown().filter(p => p[xk]!=null && p[yk]!=null);
+    const A = axes(svg, dom[0],dom[1],dom[2],dom[3],
+                   {zero:opts.zero, flipX:opts.flipX, tickFloor:opts.tickFloor});
+    let s = A.s;
+    if(opts.plate) s += plateScene(A);
+    if(opts.slotRay) s += slotRay(A);
+    if(opts.zone){
+      const zx0=A.X(-8.5), zx1=A.X(8.5), zy0=A.Y(42), zy1=A.Y(18);
+      const zx=Math.min(zx0,zx1), zw=Math.abs(zx1-zx0);
+      // A broadcast-style K-zone: solid frame, faint thirds inside.
+      s += '<rect x="'+zx+'" y="'+zy0+'" width="'+zw+'" height="'+(zy1-zy0)+'"'
+         + ' fill="rgba(255,255,255,.035)" stroke="rgba(255,255,255,.6)" stroke-width="1.6"/>';
+      for(const gx of [-8.5/3, 8.5/3])
+        s += '<line x1="'+A.X(gx)+'" y1="'+zy0+'" x2="'+A.X(gx)+'" y2="'+zy1
+           + '" stroke="rgba(255,255,255,.12)"/>';
+      for(const gy of [26, 34])
+        s += '<line x1="'+zx+'" y1="'+A.Y(gy)+'" x2="'+(zx+zw)+'" y2="'+A.Y(gy)
+           + '" stroke="rgba(255,255,255,.12)"/>';
+    }
+    // Pitches clamp to their own range, not the drawing domain -- the scene
+    // extends below the ground line, and a bounced ball must pin to the ground
+    // rather than drawing itself on top of the plate.
+    const cX = opts.clampX || [dom[0], dom[1]];
+    const cY = opts.clampY || [dom[2], dom[3]];
+    const cl=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
+    for(const p of pts){
+      const off = p[xk]<cX[0]||p[xk]>cX[1]||p[yk]<cY[0]||p[yk]>cY[1];
+      s += '<circle class="dot" data-i="'+p.i+'" cx="'+A.X(cl(p[xk],cX[0],cX[1]))+'"'
+         + ' cy="'+A.Y(cl(p[yk],cY[0],cY[1]))+'" r="4" fill="'+col(p.pt)+'"'
+         + ' fill-opacity="'+(off?0.3:0.82)+'" stroke="#0f0f1e" stroke-width="1"/>';
+    }
+    if(opts.pitcher) s += pitcherOverlay(A, pts);
+    svg.innerHTML = s;
+  }
+
+  // The arm slot drawn onto the break plot as a ray from the origin. A fastball's
+  // spin-induced movement runs roughly along the arm slot -- over the top rides
+  // straight up, sidearm runs flat -- so this one line explains why the fastball
+  // cluster sits where it does, and how far off-axis the offspeed falls.
+  function slotRay(A){
+    if(D.armAngle == null) return '';
+    const side = D.armSide === 'L' ? -1 : 1;
+    const a = D.armAngle * Math.PI/180;
+    const L = 23;
+    const ex = side*Math.cos(a)*L, ey = Math.sin(a)*L;
+    let s = '';
+    // short counter-tail so it reads as an axis, not an arrow to one pitch
+    s += '<line x1="'+A.X(-ex*0.35)+'" y1="'+A.Y(-ey*0.35)+'" x2="'+A.X(ex)+'" y2="'+A.Y(ey)
+       + '" stroke="var(--gold)" stroke-width="2" stroke-dasharray="6 4" opacity=".75"/>';
+    // Label on the counter-tail: the ray's far end lands inside the fastball
+    // cluster (that alignment is the whole point), so the readable spot is the
+    // opposite, always-empty end.
+    const lx = A.X(-ex*0.44), ly = A.Y(-ey*0.44) + 14;
+    s += '<text class="ax" x="'+lx+'" y="'+ly+'" fill="var(--gold-light)" font-size="10"'
+       + ' text-anchor="middle">arm slot '+D.armAngle+'&#176;</text>';
+    return s;
+  }
+
+  // The ground the zone floats over: home plate seen from the catcher (flat edge
+  // toward the pitcher, point toward us) with a chalked batter's box either side.
+  // Real boxes are 4ft wide and run off both edges of this frame -- they are
+  // clipped, not shrunk, the way a catcher-cam crops them.
+  function plateScene(A){
+    const CHALK='rgba(255,255,255,.3)';
+    let s='';
+    // ground line
+    s += '<line x1="'+A.X(-30)+'" y1="'+A.Y(0)+'" x2="'+A.X(30)+'" y2="'+A.Y(0)
+       + '" stroke="rgba(255,255,255,.18)" stroke-width="1.2"/>';
+    // batter's boxes: inner chalk line 6in off the plate (x=14.5), running to the
+    // frame edge. Drawn in the shallow band below the ground line.
+    for(const side of [-1,1]){
+      const xIn=A.X(side*14.5), xOut=A.X(side*30);
+      const yT=A.Y(-2), yB=A.Y(-11);
+      s += '<path d="M '+xIn+' '+yT+' L '+xOut+' '+yT+' M '+xIn+' '+yB+' L '+xOut+' '+yB
+         + ' M '+xIn+' '+yT+' L '+xIn+' '+yB+'" stroke="'+CHALK+'" stroke-width="1.4" fill="none"/>';
+    }
+    // home plate: 17in across, point toward the catcher
+    const pl=[[-8.5,-2],[8.5,-2],[8.5,-6.5],[0,-11],[-8.5,-6.5]];
+    s += '<polygon points="'+pl.map(q=>A.X(q[0])+','+A.Y(q[1])).join(' ')
+       + '" fill="rgba(255,255,255,.07)" stroke="rgba(255,255,255,.5)" stroke-width="1.4"/>';
+    return s;
+  }
+
+  // A shoulder, a head and an arm drawn to the average release point, so the
+  // slot is something you can see rather than a number to decode. Everything is
+  // in the plot's own feet, so it moves with the axes.
+  function pitcherOverlay(A, pts){
+    if(!pts.length || D.armAngle == null) return '';
+    const meanBy = k => pts.reduce((a,p)=>a+p[k],0)/pts.length;
+    const relS = meanBy('rel_s'), relH = meanBy('rel_h');
+    // Work back from the release along the slot: shoulder = release minus one
+    // arm length at the arm angle. Anchoring to the release (not the middle of
+    // the rubber) is what keeps the figure honest for a kid who sets up on the
+    // first- or third-base side.
+    const side = D.armSide === 'L' ? -1 : 1;
+    const a = D.armAngle * Math.PI/180, ARM = D.armLen || 2.0;
+    const shoulderX = relS - side*Math.cos(a)*ARM;
+    const shoulderY = relH - Math.sin(a)*ARM;
+    const bodyX = shoulderX - side*0.55;
+    const headY = shoulderY + 0.55;
+    let s = '';
+    // A pitcher facing us: shoulders across, head above, torso below -- all
+    // hung off the computed shoulder. Faint, so the pitches stay the subject.
+    const SH = 'rgba(255,255,255,.20)';
+    s += '<line x1="'+A.X(bodyX - side*0.35)+'" y1="'+A.Y(shoulderY)+'" x2="'
+       + A.X(shoulderX)+'" y2="'+A.Y(shoulderY)+'" stroke="'+SH+'"'
+       + ' stroke-width="6" stroke-linecap="round"/>';
+    s += '<line x1="'+A.X(bodyX)+'" y1="'+A.Y(shoulderY)+'" x2="'+A.X(bodyX)+'" y2="'
+       + A.Y(shoulderY-1.6)+'" stroke="'+SH+'" stroke-width="6" stroke-linecap="round"/>';
+    s += '<circle cx="'+A.X(bodyX)+'" cy="'+A.Y(headY)+'" r="8"'
+       + ' fill="none" stroke="'+SH+'" stroke-width="2.5"/>';
+    // the arm: shoulder to where the ball actually left his hand
+    s += '<line x1="'+A.X(shoulderX)+'" y1="'+A.Y(shoulderY)+'" x2="'+A.X(relS)
+       + '" y2="'+A.Y(relH)+'" stroke="var(--gold)" stroke-width="2.5"'
+       + ' stroke-linecap="round" stroke-dasharray="5 3"/>';
+    s += '<circle cx="'+A.X(shoulderX)+'" cy="'+A.Y(shoulderY)+'" r="4"'
+       + ' fill="var(--gold)" stroke="#0f0f1e" stroke-width="1.5"/>';
+    if(D.armAngle != null){
+      const midX = (A.X(shoulderX)+A.X(relS))/2, midY = (A.Y(shoulderY)+A.Y(relH))/2;
+      s += '<text class="ax" x="'+(midX + 10*side)+'" y="'+(midY-6)+'"'
+         + ' fill="var(--gold-light)" font-size="11" text-anchor="'
+         + (side>0?'start':'end')+'">'+D.armAngle+'&#176;</text>';
+    }
+    return s;
+  }
+
+  function velocity(){
+    const svg = document.getElementById('plotVel'); if(!svg) return;
+    const rows = D.sessions || [];
+    const dates = rows.map(r => r.date);
+    const series = {};
+    rows.forEach((r,i) => {
+      for(const pt in r.by_pt){
+        if(!active.has(pt)) continue;
+        (series[pt] = series[pt] || []).push({x:i, y:r.by_pt[pt].velo, n:r.by_pt[pt].n, date:r.date, pt:pt});
+      }
+    });
+    const all = Object.keys(series).reduce((a,k)=>a.concat(series[k].map(d=>d.y)),[]);
+    if(!all.length){ svg.innerHTML=''; return; }
+    let lo=Math.min.apply(null,all), hi=Math.max.apply(null,all);
+    if(lo===hi){lo-=1;hi+=1;}
+    const pad=(hi-lo)*0.15;
+    const every = Math.ceil(dates.length/5);
+    const short = d => { const q=d.split('-'); return (+q[1])+'/'+q[2]; };
+    const ticks = dates.map((d,i)=>({v:i,label:short(d)}))
+                       .filter((_,i)=> i%every===0 || i===dates.length-1);
+    const A = axes(svg, 0, Math.max(dates.length-1,1), lo-pad, hi+pad, {xticks:ticks});
+    let s = A.s;
+    for(const pt in series){
+      const pairs = series[pt].sort((a,b)=>a.x-b.x);
+      if(pairs.length>1)
+        s += '<polyline fill="none" stroke="'+col(pt)+'" stroke-width="2" stroke-linejoin="round" points="'
+           + pairs.map(d=>A.X(d.x)+','+A.Y(d.y)).join(' ') + '"/>';
+      for(const d of pairs)
+        s += '<circle class="tdot" data-pt="'+d.pt+'" data-date="'+d.date+'" data-velo="'+d.y+'"'
+           + ' data-n="'+d.n+'" cx="'+A.X(d.x)+'" cy="'+A.Y(d.y)+'" r="4.5" fill="'+col(pt)+'"'
+           + ' stroke="#0f0f1e" stroke-width="1"/>';
+    }
+    svg.innerHTML = s;
+  }
+
+  function draw(){
+    // flipX on all three: the underlying numbers are pitcher-perspective.
+    // Domain reaches below zero so the plate and boxes have ground to sit on;
+    // the pitches themselves still clamp to real space (0..60in, +/-24 wide).
+    scatter('plotLoc','px','pz',[-30,30,-14,60],
+            {zone:true, plate:true, flipX:true, tickFloor:0, clampX:[-24,24], clampY:[0,60]});
+    // Movement and release stay in the PITCHER'S view: the data is pitcher-POV,
+    // Rapsodo's own app draws it that way, and a coach expects a righty's run on
+    // the right. Only the strike-zone location flips to the catcher's view.
+    scatter('plotMov','hb','ivb',[-25,25,-25,25],{zero:true, slotRay:true});
+    // Down to 2ft so the shoulder and head fit in frame with the release cluster.
+    scatter('plotRel','rel_s','rel_h',[-4,4,2,7],{zero:true, pitcher:true});
+    velocity();
+  }
+
+  // ---- hover ----
+  const fmt=(v,u)=> v==null?'--':v+(u||'');
+  function place(e){
+    const pad=14; let x=e.clientX+pad, y=e.clientY+pad;
+    const r=tip.getBoundingClientRect();
+    if(x+r.width>innerWidth-8) x=e.clientX-r.width-pad;
+    if(y+r.height>innerHeight-8) y=e.clientY-r.height-pad;
+    tip.style.left=x+'px'; tip.style.top=y+'px';
+  }
+  document.body.addEventListener('mouseover', e => {
+    const dot=e.target.closest('.dot');
+    if(dot){
+      const p=D.pitches[+dot.dataset.i];
+      document.querySelectorAll('.dot.hl').forEach(n=>n.classList.remove('hl'));
+      document.querySelectorAll('.dot[data-i="'+p.i+'"]').forEach(n=>n.classList.add('hl'));
+      tip.innerHTML='<b>'+(LABEL[p.pt]||p.pt)+'</b>  '+fmt(p.velo&&+p.velo.toFixed(1),' mph')+'\n'
+        +'IVB '+fmt(p.ivb&&+p.ivb.toFixed(1),'"')+'   HB '+fmt(p.hb&&+p.hb.toFixed(1),'"')+'\n'
+        +'Spin '+fmt(p.spin&&Math.round(p.spin),' rpm')+'\n'+p.date;
+      tip.style.opacity=1; place(e); return;
+    }
+    const td=e.target.closest('.tdot');
+    if(td){
+      tip.innerHTML='<b>'+(LABEL[td.dataset.pt]||td.dataset.pt)+'</b>  '+td.dataset.velo+' mph avg\n'
+        +td.dataset.n+' pitches\n'+td.dataset.date;
+      tip.style.opacity=1; place(e);
+    }
+  });
+  document.body.addEventListener('mousemove', e => { if(tip.style.opacity==='1') place(e); });
+  document.body.addEventListener('mouseout', e => {
+    if(e.target.closest('.dot')||e.target.closest('.tdot')){
+      document.querySelectorAll('.dot.hl').forEach(n=>n.classList.remove('hl'));
+      tip.style.opacity=0;
+    }
+  });
+
+  draw();
+})();
+</script>
+</body>
+</html>
