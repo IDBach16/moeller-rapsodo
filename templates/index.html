@@ -153,6 +153,10 @@ svg{width:100%;height:auto;max-width:480px;display:block;margin:0 auto}
 @media(max-width:640px){.pct-row{grid-template-columns:120px 1fr 120px;gap:.6rem}}
 
 .empty{color:var(--ink-3);font-size:.9rem;padding:1.5rem 0;text-align:center}
+/* the selected pitcher's rows on the Stuff+ staff board */
+tr.rowme td{background:var(--gold-dim)}
+tr.rowme td:first-child{color:var(--gold-light)}
+.stuffval{font-family:var(--mono);font-weight:700}
 .tip{position:fixed;pointer-events:none;opacity:0;transition:opacity .1s;z-index:50;
   background:#0b0b16;border:1px solid var(--line);border-radius:8px;
   padding:.5rem .65rem;font-size:.75rem;white-space:pre;line-height:1.55;
@@ -218,6 +222,7 @@ footer{margin-top:2.2rem;padding-top:1rem;border-top:1px solid var(--hairline);
   <button role="tab" aria-selected="false" data-tab="mov">Movement Profile</button>
   <button role="tab" aria-selected="false" data-tab="vel">Velocity / Pitch</button>
   <button role="tab" aria-selected="false" data-tab="day">By Date</button>
+  <button role="tab" aria-selected="false" data-tab="stf">Stuff+</button>
 </div>
 
 <!-- ============ PITCH LOCATION ============ -->
@@ -365,6 +370,62 @@ footer{margin-top:2.2rem;padding-top:1rem;border-top:1px solid var(--hairline);
       <svg id="plotVel" viewBox="0 0 320 300" role="img" aria-label="Velocity by session"></svg>
     </figure>
     </div>
+  </div>
+</section>
+
+<!-- ============ STUFF+ ============ -->
+<section class="tabpane" id="tab-stf" hidden>
+  <div class="panel">
+    <h2>Stuff+ — {{ player.name }}</h2>
+    <p class="hint">Pitch quality graded by a model trained on MLB run values, using only
+      what the unit measures (velo, spin, break, release, and each pitch against his own
+      fastball). <strong>100 = the average Moeller tracked pitch; every 10 points = one
+      staff standard deviation.</strong> It grades the pitch's shape, not command &mdash;
+      on our own charted games it tracks whiff rate and says nothing about strike rate,
+      which is exactly what Stuff+ should do. Under 10 tracked reps = provisional.</p>
+    {% if stuff_error %}
+      <p class="empty">Stuff+ unavailable: {{ stuff_error }}</p>
+    {% elif stuff_mine %}
+      {% for m in stuff_mine %}
+      <div class="pct-row">
+        <span class="nm"><span class="sw" data-pt="{{ m.pt }}"></span>{{ m.label }}
+          {% if m.provisional %}<span class="prov" title="fewer than 10 tracked reps">provisional</span>{% endif %}</span>
+        <span class="pct-track">
+          <span class="pct-fill" style="width:{{ m.bar }}%"></span>
+          <span class="pct-mid"></span>
+        </span>
+        <span class="pct-val"><b>{{ m.stuff }}</b> &middot; {{ m.n }} pitches</span>
+      </div>
+      {% endfor %}
+      <p class="hint" style="margin:.8rem 0 0">The midline is 100 &mdash; the program
+        average. Track runs 70 to 130 (&plusmn;3 staff standard deviations).</p>
+    {% else %}
+      <p class="empty">No scoreable pitches yet &mdash; Stuff+ needs velocity, spin,
+        break and release on the same tracked pitch.</p>
+    {% endif %}
+
+    {% if not stuff_error and stuff_staff %}
+    <h2 style="margin-top:1.8rem">Staff board</h2>
+    <p class="hint">Every graded pitch in the program, best first.
+      {{ player.name }}&rsquo;s rows are highlighted; the legend chips filter by pitch.</p>
+    <div class="scroll"><table>
+      <thead><tr><th>#</th><th>Pitcher</th><th>Level</th><th>Pitch</th>
+        <th>Stuff+</th><th>N</th></tr></thead>
+      <tbody>
+      {% for r in stuff_staff %}
+        <tr data-pt="{{ r.pt }}" class="{{ 'rowme' if r.player_id == player.id }}">
+          <td>{{ r.rank }}</td>
+          <td style="text-align:left;font-family:inherit">{{ r.name }}</td>
+          <td>{{ r.level }}</td>
+          <td><span class="sw" data-pt="{{ r.pt }}"></span>{{ r.label }}
+            {% if r.provisional %}<span class="prov">prov</span>{% endif %}</td>
+          <td class="stuffval hi">{{ r.stuff }}</td>
+          <td>{{ r.n }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+    {% endif %}
   </div>
 </section>
 

@@ -2,3 +2,5 @@ flask
 gunicorn
 SQLAlchemy>=2.0
 psycopg2-binary
+scikit-learn>=1.6
+joblib

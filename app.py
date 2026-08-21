@@ -14,6 +14,8 @@ writes — this app is read-only by design.
 """
 
 import os
+import sys
+import time
 
 from flask import Flask, jsonify, render_template, request
 
@@ -22,6 +24,7 @@ import db
 import metrics
 
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(APP_DIR, "stuff"))
 
 
 def _load_dotenv():
@@ -46,6 +49,47 @@ def _engine():
     return db.get_engine()
 
 
+# Stuff+ is a staff-wide computation -- the scale is the program, so scoring
+# one pitcher means scoring everyone. Cached in-process because the data only
+# changes once a day when the 5am pull runs.
+_STUFF_TTL = 900
+_stuff_cache = {"at": 0.0, "rows": None, "by_player": None, "error": None}
+
+
+def _bar(stuff_plus):
+    """Stuff+ 70..130 -> a 0..100% bar with the program average mid-track."""
+    return int(round(min(max((stuff_plus - 70.0) / 60.0 * 100.0, 2.0), 100.0)))
+
+
+def _staff_stuff(engine):
+    now = time.time()
+    if _stuff_cache["rows"] is not None and now - _stuff_cache["at"] < _STUFF_TTL:
+        return _stuff_cache
+    try:
+        import stuff
+        roster = data.pitchers(engine)
+        plists = {p["id"]: data.pitches(engine, p["id"]) for p in roster}
+        throws = {p["id"]: p.get("throws") for p in roster}
+        table = stuff.staff_stuff(plists, throws)
+        rows = []
+        for p in roster:
+            for pt, d in (table.get(p["id"]) or {}).items():
+                rows.append({"player_id": p["id"], "name": p["name"],
+                             "level": p["level"], "slug": p["slug"], "pt": pt,
+                             "label": metrics.PITCH_TYPE_LABELS.get(pt, pt),
+                             "stuff": d["stuff_plus"], "bar": _bar(d["stuff_plus"]),
+                             "n": d["n"], "provisional": d["provisional"]})
+        rows.sort(key=lambda r: -r["stuff"])
+        for i, r in enumerate(rows, 1):
+            r["rank"] = i
+        _stuff_cache.update(at=now, rows=rows, by_player=table, error=None)
+    except Exception as e:                        # noqa: BLE001 - shown in the tab
+        # Surfaced in the tab rather than 500ing the whole dashboard -- the
+        # other four tabs don't depend on the model being loadable.
+        _stuff_cache.update(at=now, rows=[], by_player={}, error=str(e))
+    return _stuff_cache
+
+
 @app.route("/")
 def index():
     roster = data.pitchers(_engine())
@@ -68,8 +112,15 @@ def index():
     if pt not in thrown:
         pt = next((a["pt"] for a in ars if a["pt"] != "UNK"), None)
 
+    st = _staff_stuff(_engine())
+    stuff_mine = sorted([r for r in st["rows"] if r["player_id"] == chosen["id"]],
+                        key=lambda r: -r["stuff"])
+
     return render_template(
         "index.html", empty=False,
+        stuff_mine=stuff_mine,
+        stuff_staff=st["rows"],
+        stuff_error=st["error"],
         arsenal=ars,
         sessions=data.sessions(pitch_list),
         pitches=[{k: v for k, v in p.items() if k != "session_id"}
