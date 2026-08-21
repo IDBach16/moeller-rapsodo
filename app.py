@@ -119,6 +119,7 @@ def index():
     return render_template(
         "index.html", empty=False,
         stuff_mine=stuff_mine,
+        stuff_by_pt={r["pt"]: r for r in stuff_mine},
         stuff_staff=st["rows"],
         stuff_error=st["error"],
         arsenal=ars,

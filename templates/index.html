@@ -300,12 +300,17 @@ footer{margin-top:2.2rem;padding-top:1rem;border-top:1px solid var(--hairline);
     <p class="hint">Fixed &plusmn;25in scale so shapes are comparable between pitchers
       and across months.</p>
     <div class="scroll"><table>
-      <thead><tr><th>Pitch</th><th>N</th><th>IVB</th><th>HB</th><th>Spin</th><th>True spin</th><th>Eff</th><th>Tilt</th><th>Rel ht</th><th>Rel side</th><th>Arm angle</th></tr></thead>
+      <thead><tr><th>Pitch</th><th>N</th><th>Stuff+</th><th>IVB</th><th>HB</th><th>Spin</th><th>True spin</th><th>Eff</th><th>Tilt</th><th>Rel ht</th><th>Rel side</th><th>Arm angle</th></tr></thead>
       <tbody>
       {% for a in arsenal %}
+        {% set sp = stuff_by_pt.get(a.pt) %}
         <tr data-pt="{{ a.pt }}">
           <td><span class="sw" data-pt="{{ a.pt }}"></span>{{ a.label }}</td>
           <td>{{ a.n }}</td>
+          <td class="stuffval hi"
+              title="100 = the average Moeller tracked pitch; 10 points = one staff SD">
+            {%- if sp %}{{ sp.stuff }}{% if sp.provisional %}<span class="prov">prov</span>{% endif %}{% else %}&mdash;{% endif -%}
+          </td>
           <td class="hi">{{ a.ivb if a.ivb is not none else '—' }}</td>
           <td class="hi">{{ a.hb if a.hb is not none else '—' }}</td>
           <td>{{ a.spin if a.spin is not none else '—' }}</td>
