@@ -217,6 +217,7 @@ footer{margin-top:2.2rem;padding-top:1rem;border-top:1px solid var(--hairline);
   <button role="tab" aria-selected="false" data-tab="pct">Percentile Rankings</button>
   <button role="tab" aria-selected="false" data-tab="mov">Movement Profile</button>
   <button role="tab" aria-selected="false" data-tab="vel">Velocity / Pitch</button>
+  <button role="tab" aria-selected="false" data-tab="day">By Date</button>
 </div>
 
 <!-- ============ PITCH LOCATION ============ -->
@@ -367,6 +368,38 @@ footer{margin-top:2.2rem;padding-top:1rem;border-top:1px solid var(--hairline);
   </div>
 </section>
 
+<!-- ============ BY DATE ============ -->
+<section class="tabpane" id="tab-day" hidden>
+  <div class="panel">
+    <h2>By Date</h2>
+    <p class="hint">One bullpen at a time &mdash; pick the day he threw. The table is
+      that session only; <strong>&Delta; velo</strong> compares the day's average against
+      his overall average for the same pitch.</p>
+    <div class="controls" style="margin-bottom:1.1rem;align-items:center">
+      <div>
+        <label class="lbl" for="daySel">Session date</label>
+        <select id="daySel"></select>
+      </div>
+      <span class="pill" id="dayCount"></span>
+    </div>
+    <div class="scroll"><table>
+      <thead><tr><th>Pitch</th><th>N</th><th>Usage</th><th>Velo</th><th>Max</th>
+        <th>&Delta; velo</th><th>Spin</th><th>Eff</th><th>IVB</th><th>HB</th><th>Strike%</th></tr></thead>
+      <tbody id="dayBody"></tbody>
+    </table></div>
+    <div class="plots2">
+      <figure>
+        <figcaption>Location <span>this session &mdash; catcher's view</span></figcaption>
+        <svg id="plotDayLoc" viewBox="0 0 320 340" role="img" aria-label="Session pitch location"></svg>
+      </figure>
+      <figure>
+        <figcaption>Movement <span>this session &mdash; pitcher's view, fixed &plusmn;25in</span></figcaption>
+        <svg id="plotDayMov" viewBox="0 0 320 340" role="img" aria-label="Session pitch movement"></svg>
+      </figure>
+    </div>
+  </div>
+</section>
+
 <footer>
   Rapsodo bullpen data, pulled automatically every morning. Failed radar tracks
   excluded. Pitch types are the device's own classification — none have been
@@ -482,7 +515,8 @@ footer{margin-top:2.2rem;padding-top:1rem;border-top:1px solid var(--hairline);
   function scatter(id, xk, yk, dom, opts){
     opts = opts || {};
     const svg = document.getElementById(id); if(!svg) return;
-    const pts = shown().filter(p => p[xk]!=null && p[yk]!=null);
+    const pts = shown().filter(p => p[xk]!=null && p[yk]!=null
+                                    && (!opts.date || p.date === opts.date));
     const A = axes(svg, dom[0],dom[1],dom[2],dom[3],
                    {zero:opts.zero, flipX:opts.flipX, tickFloor:opts.tickFloor});
     let s = A.s;
@@ -643,6 +677,56 @@ footer{margin-top:2.2rem;padding-top:1rem;border-top:1px solid var(--hairline);
     svg.innerHTML = s;
   }
 
+  // ---- by-date tab ----
+  // Everything client-side: the payload already carries one row per pitch with
+  // its session date, so a day view is a filter, not another query.
+  const dayDates = Array.from(new Set(D.pitches.map(p => p.date))).sort().reverse();
+  let selDate = dayDates[0] || null;
+  const daySel = document.getElementById('daySel');
+  const niceDate = d => new Date(d + 'T12:00:00')
+    .toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+  if(daySel && dayDates.length){
+    daySel.innerHTML = dayDates.map(d =>
+      '<option value="'+d+'">'+niceDate(d)+'</option>').join('');
+    daySel.addEventListener('change', () => {
+      selDate = daySel.value; dayTable(); draw();
+    });
+  }
+  const overallVelo = {}; D.arsenal.forEach(a => { overallVelo[a.pt] = a.velo; });
+
+  function dayTable(){
+    const body = document.getElementById('dayBody'); if(!body || !selDate) return;
+    const pts = D.pitches.filter(p => p.date === selDate);
+    const count = document.getElementById('dayCount');
+    if(count) count.textContent = pts.length + ' pitches this session';
+    const by = {};
+    pts.forEach(p => { (by[p.pt] = by[p.pt] || []).push(p); });
+    const order = pt => { const i = KNOWN.indexOf(pt); return i < 0 ? 99 : i; };
+    const mn = (g,k) => { const v = g.map(x => x[k]).filter(x => x != null);
+      return v.length ? v.reduce((s,x) => s+x, 0)/v.length : null; };
+    const f = (v,dp) => v == null ? '—' : (+v).toFixed(dp == null ? 1 : dp);
+    body.innerHTML = Object.keys(by).sort((a,b) => order(a)-order(b)).map(pt => {
+      const g = by[pt];
+      const velo = mn(g,'velo');
+      const mx = Math.max.apply(null, g.map(x => x.velo));
+      const dv = (velo != null && overallVelo[pt] != null) ? velo - overallVelo[pt] : null;
+      const strikes = g.map(x => x.strike).filter(x => x != null);
+      const spct = strikes.length
+        ? Math.round(100 * strikes.reduce((s,x) => s+x, 0) / strikes.length) : null;
+      const eff = mn(g,'eff');
+      return '<tr data-pt="'+pt+'"'+(active.has(pt) ? '' : ' style="display:none"')+'>'
+        + '<td><span class="sw" data-pt="'+pt+'"></span>'+(LABEL[pt]||pt)+'</td>'
+        + '<td>'+g.length+'</td>'
+        + '<td>'+Math.round(100*g.length/pts.length)+'%</td>'
+        + '<td class="hi">'+f(velo)+'</td><td>'+f(mx)+'</td>'
+        + '<td>'+(dv == null ? '—' : (dv > 0 ? '+' : '')+dv.toFixed(1))+'</td>'
+        + '<td>'+f(mn(g,'spin'),0)+'</td>'
+        + '<td>'+(eff == null ? '—' : Math.round(eff)+'%')+'</td>'
+        + '<td>'+f(mn(g,'ivb'))+'</td><td>'+f(mn(g,'hb'))+'</td>'
+        + '<td>'+(spct == null ? '—' : spct+'%')+'</td></tr>';
+    }).join('');
+  }
+
   function draw(){
     // flipX on all three: the underlying numbers are pitcher-perspective.
     // Domain reaches below zero so the plate and boxes have ground to sit on;
@@ -656,7 +740,16 @@ footer{margin-top:2.2rem;padding-top:1rem;border-top:1px solid var(--hairline);
     // Down to 2ft so the shoulder and head fit in frame with the release cluster.
     scatter('plotRel','rel_s','rel_h',[-4,4,2,7],{zero:true, pitcher:true});
     velocity();
+    // The By-Date pair: same scenes, one session's pitches.
+    if(selDate){
+      scatter('plotDayLoc','px','pz',[-30,30,-14,60],
+              {zone:true, plate:true, flipX:true, tickFloor:0,
+               clampX:[-24,24], clampY:[0,60], date:selDate});
+      scatter('plotDayMov','hb','ivb',[-25,25,-25,25],
+              {zero:true, slotRay:true, date:selDate});
+    }
   }
+  dayTable();
 
   // ---- hover ----
   const fmt=(v,u)=> v==null?'--':v+(u||'');
