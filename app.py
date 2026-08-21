@@ -78,7 +78,7 @@ def _staff_stuff(engine):
                              "level": p["level"], "slug": p["slug"], "pt": pt,
                              "label": metrics.PITCH_TYPE_LABELS.get(pt, pt),
                              "stuff": d["stuff_plus"], "bar": _bar(d["stuff_plus"]),
-                             "n": d["n"], "provisional": d["provisional"]})
+                             "n": d["n"]})
         rows.sort(key=lambda r: -r["stuff"])
         for i, r in enumerate(rows, 1):
             r["rank"] = i

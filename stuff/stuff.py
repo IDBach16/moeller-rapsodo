@@ -40,10 +40,13 @@ FEATURES = ["velo", "spin", "ivb", "hb", "rel_h", "rel_s",
             "velo_diff", "ivb_diff", "hb_diff"]
 FB_FAMILY = ("FB", "SI", "CT")
 
-# A pitcher-pitch needs this many scored reps before its Stuff+ is shown as a
-# real grade; below it the number is reported but flagged provisional --
-# the same threshold the arsenal table uses.
-PROVISIONAL_N = 10
+# A pitcher-pitch needs this many scored reps before a Stuff+ exists at all.
+# Measured on our own staff: one rep varies ~8 points around the pitch's true
+# grade while the whole staff spans ~10 per SD, so at 10 reps a grade still
+# moves +/-5 points. At 30 it is +/-3 -- about two bullpens of a primary
+# pitch. Below the line the grade is withheld, not flagged: a number a coach
+# can read will get read.
+MIN_STUFF_N = 30
 
 _bundle = None
 
@@ -203,12 +206,13 @@ def staff_stuff(pitch_lists_by_player, throws_by_player):
         by_pt = defaultdict(list)
         for pt, rv in pitches:
             by_pt[pt].append(rv)
-        out[pid] = {
+        graded = {
             pt: {
                 "stuff_plus": round(100 + 10 * (mean_rv - _mean(rvs)) / sd, 1),
                 "n": len(rvs),
-                "provisional": len(rvs) < PROVISIONAL_N,
             }
-            for pt, rvs in by_pt.items()
+            for pt, rvs in by_pt.items() if len(rvs) >= MIN_STUFF_N
         }
+        if graded:
+            out[pid] = graded
     return out

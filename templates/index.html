@@ -308,8 +308,8 @@ footer{margin-top:2.2rem;padding-top:1rem;border-top:1px solid var(--hairline);
           <td><span class="sw" data-pt="{{ a.pt }}"></span>{{ a.label }}</td>
           <td>{{ a.n }}</td>
           <td class="stuffval hi"
-              title="100 = the average Moeller tracked pitch; 10 points = one staff SD">
-            {%- if sp %}{{ sp.stuff }}{% if sp.provisional %}<span class="prov">prov</span>{% endif %}{% else %}&mdash;{% endif -%}
+              title="100 = the average Moeller tracked pitch; 10 points = one staff SD; needs 30 tracked reps">
+            {%- if sp %}{{ sp.stuff }}{% else %}&mdash;{% endif -%}
           </td>
           <td class="hi">{{ a.ivb if a.ivb is not none else '—' }}</td>
           <td class="hi">{{ a.hb if a.hb is not none else '—' }}</td>
@@ -387,14 +387,15 @@ footer{margin-top:2.2rem;padding-top:1rem;border-top:1px solid var(--hairline);
       fastball). <strong>100 = the average Moeller tracked pitch; every 10 points = one
       staff standard deviation.</strong> It grades the pitch's shape, not command &mdash;
       on our own charted games it tracks whiff rate and says nothing about strike rate,
-      which is exactly what Stuff+ should do. Under 10 tracked reps = provisional.</p>
+      which is exactly what Stuff+ should do. <strong>A pitch needs 30 tracked reps to
+      earn a grade</strong> &mdash; below that the number moves &plusmn;5 points or more
+      on our own data, so it is withheld rather than shown with a warning.</p>
     {% if stuff_error %}
       <p class="empty">Stuff+ unavailable: {{ stuff_error }}</p>
     {% elif stuff_mine %}
       {% for m in stuff_mine %}
       <div class="pct-row">
-        <span class="nm"><span class="sw" data-pt="{{ m.pt }}"></span>{{ m.label }}
-          {% if m.provisional %}<span class="prov" title="fewer than 10 tracked reps">provisional</span>{% endif %}</span>
+        <span class="nm"><span class="sw" data-pt="{{ m.pt }}"></span>{{ m.label }}</span>
         <span class="pct-track">
           <span class="pct-fill" style="width:{{ m.bar }}%"></span>
           <span class="pct-mid"></span>
@@ -405,13 +406,13 @@ footer{margin-top:2.2rem;padding-top:1rem;border-top:1px solid var(--hairline);
       <p class="hint" style="margin:.8rem 0 0">The midline is 100 &mdash; the program
         average. Track runs 70 to 130 (&plusmn;3 staff standard deviations).</p>
     {% else %}
-      <p class="empty">No scoreable pitches yet &mdash; Stuff+ needs velocity, spin,
-        break and release on the same tracked pitch.</p>
+      <p class="empty">No pitch with 30+ tracked reps yet &mdash; a grade earns its
+        way in at 30, about two bullpens of a primary pitch.</p>
     {% endif %}
 
     {% if not stuff_error and stuff_staff %}
     <h2 style="margin-top:1.8rem">Staff board</h2>
-    <p class="hint">Every graded pitch in the program, best first.
+    <p class="hint">Every pitch in the program with 30+ tracked reps, best first.
       {{ player.name }}&rsquo;s rows are highlighted; the legend chips filter by pitch.</p>
     <div class="scroll"><table>
       <thead><tr><th>#</th><th>Pitcher</th><th>Level</th><th>Pitch</th>
@@ -422,8 +423,7 @@ footer{margin-top:2.2rem;padding-top:1rem;border-top:1px solid var(--hairline);
           <td>{{ r.rank }}</td>
           <td style="text-align:left;font-family:inherit">{{ r.name }}</td>
           <td>{{ r.level }}</td>
-          <td><span class="sw" data-pt="{{ r.pt }}"></span>{{ r.label }}
-            {% if r.provisional %}<span class="prov">prov</span>{% endif %}</td>
+          <td><span class="sw" data-pt="{{ r.pt }}"></span>{{ r.label }}</td>
           <td class="stuffval hi">{{ r.stuff }}</td>
           <td>{{ r.n }}</td>
         </tr>

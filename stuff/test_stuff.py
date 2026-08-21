@@ -75,18 +75,21 @@ print("\nstaff scaling")
 staff = {}
 throws = {}
 for i in range(10):
-    # Ten pitchers spread across a velocity band, 12 fastballs each.
-    staff[i] = [fb(velo=78 + i) for _ in range(12)]
+    # Ten pitchers spread across a velocity band, 30 fastballs each -- the
+    # measured floor for a grade that holds to about +/-3 points.
+    staff[i] = [fb(velo=78 + i) for _ in range(30)]
     throws[i] = "R"
 table = stuff.staff_stuff(staff, throws)
 vals = [table[i]["FB"]["stuff_plus"] for i in range(10)]
-weighted = sum(v * 12 for v in vals) / 120
+weighted = sum(v * 30 for v in vals) / 300
 check("program average sits at 100", abs(weighted - 100) < 1.0, f"{weighted}")
 check("harder throwers rank higher on the staff scale",
       vals == sorted(vals), str(vals))
-check("12 reps is a real grade", table[0]["FB"]["provisional"] is False)
-thin = stuff.staff_stuff({**staff, 99: [fb(velo=90)] * 3}, {**throws, 99: "R"})
-check("3 reps is provisional", thin[99]["FB"]["provisional"] is True)
+check("30 reps earns a grade", "FB" in table[0])
+thin = stuff.staff_stuff({**staff, 99: [fb(velo=90)] * 29}, {**throws, 99: "R"})
+check("29 reps gets NO grade -- withheld, not flagged", 99 not in thin)
+check("withholding one pitcher doesn't drop anyone else",
+      all(i in thin for i in range(10)))
 
 print()
 if FAILED:

@@ -34,14 +34,12 @@ def main():
     rows = []
     for pid, by_pt in table.items():
         for pt, d in by_pt.items():
-            rows.append((d["stuff_plus"], names[pid], levels[pid], pt,
-                         d["n"], d["provisional"]))
+            rows.append((d["stuff_plus"], names[pid], levels[pid], pt, d["n"]))
     rows.sort(reverse=True)
 
     print(f"{'Stuff+':>7}  {'Pitcher':<22} {'Level':<9} {'Pitch':<5} {'N':>4}")
-    for sp, name, level, pt, n, prov in rows:
-        flag = "  (provisional)" if prov else ""
-        print(f"{sp:>7}  {name:<22} {level:<9} {pt:<5} {n:>4}{flag}")
+    for sp, name, level, pt, n in rows:
+        print(f"{sp:>7}  {name:<22} {level:<9} {pt:<5} {n:>4}")
 
     print(f"\n{len(rows)} pitcher-pitches scored across "
           f"{len(table)} pitchers.")
