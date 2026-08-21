@@ -2,5 +2,8 @@ flask
 gunicorn
 SQLAlchemy>=2.0
 psycopg2-binary
-scikit-learn>=1.6
+# Pinned to the version the model was pickled with -- joblib pickles reference
+# sklearn's private module paths, and a mismatched install fails to load the
+# model ("No module named '_loss'").
+scikit-learn==1.8.0
 joblib
